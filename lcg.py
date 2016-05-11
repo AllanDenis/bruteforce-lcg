@@ -66,16 +66,21 @@ def main():
 	print("a = %d" % a)
 	x, inicio = 1, 1
 	print("Gerando lista... ")
-	with open(arquivo, "w") as wordlist:
-		tamanho = len(str(n))
-		for i in range(n):
-		    # descomente a linha abaixo se for executar localmente
-			linha = str(x).zfill(tamanho)
-			wordlist.write(linha + '\n')
-			lista.append(x)
-			x = (a*x + c) % n
-			# if x == inicio: break
-	print("Pronto.")
+	try:
+		with open(arquivo, "w") as wordlist:
+			tamanho = len(str(n))
+			for i in range(n):
+			    # descomente a linha abaixo se for executar localmente
+				linha = str(x).zfill(tamanho)
+				wordlist.write(linha + '\n')
+				# lista.append(x)
+				x = (a*x + c) % n
+				# if x == inicio: break
+		print("Pronto.")
+
+	except KeyboardInterrupt as e:
+		print("\rInterrompido.")
+
 
 # Teste
 def lcg_test():
