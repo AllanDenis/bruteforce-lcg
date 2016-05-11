@@ -6,16 +6,16 @@
 	ou seja, implementa um gerador de congruencia linear (LCG)
 """
 
-from math import floor, sqrt
+from math import floor, sqrt, log10
 from random import random
 from sys import argv, stdout
 from time import time
+from datetime import timedelta
 import threading
 
 # tamanho da lista
 n = 100
 arquivo = "wordlist.txt"
-# Para n muito grande, mude mostrar para False
 verbose = True
 # veja a definicao de congruencia linear
 a = 1
@@ -23,14 +23,14 @@ a = 1
 c = 5
 lista = []
 
-# Retorna o maximo divisor comum positivo de a e b
 def mdc(a, b):
+	"""Retorna o maximo divisor comum positivo de a e b"""
 	while b: a, b = b, a % b
 	return abs(a)
 
 
-# Retorna os fatores primos de n
 def fatores(n):
+	"""Retorna os fatores primos de n"""
 	incremento = lambda x: int(1 + x*4 - (x/2)*2)
 	maxq = floor(sqrt(n))
 	d = 1
@@ -51,7 +51,10 @@ def main():
 
 	# Busca c tal que c e n sejam coprimos
 	global a, c, n
-	if argv[1:]: n = 10 ** int(argv[1])
+	tamanho = 0
+	if argv[1:]:
+		tamanho = int(argv[1])
+		n = 10 ** tamanho
 	c = int(n / 4)
 	print("Buscando o menor coprimo de %d e %d..." % (n, c))
 	while mdc(n, c) != 1: c += 1
@@ -62,20 +65,46 @@ def main():
 	# Segundo Knuth, deve haver a condicao abaixo
 	if (n % 4) == 0: a = a * 4
 	# a finalmente calculado
-	a = a + 1
+	a += 1
 	print("a = %d" % a)
 	x, inicio = 1, 1
 	print("Gerando lista... ")
+
+	def status():
+		velocidade = i / (time() - start)
+		estimativa = (n-i)/velocidade
+		estimativa = timedelta(seconds=int(estimativa))
+		progresso = 100 * (i/n)
+
+		# Legível para humanos
+		if 			velocidade < 1e3: velocidade = "%.3f l/s" % velocidade
+		elif  1e3 < velocidade < 1e6: velocidade = "%.2f K/s" % (velocidade/1e3)
+		elif  1e6 < velocidade < 1e9: velocidade = "%.2f M/s" % (velocidade/1e6)
+		else:						  velocidade = "%.2f G/s" % (velocidade/1e9)
+		stdout.write("\r%.2f%%. Tempo estimado: %s " % (progresso, estimativa))
+		stdout.write("@ %s" % velocidade)
+		stdout.write("\t(CTRL-\ para abortar)\r")
+
 	with open(arquivo, "w") as wordlist:
-		tamanho = len(str(n))
 		for i in range(n):
-		    # descomente a linha abaixo se for executar localmente
-			linha = str(x).zfill(tamanho)
-			wordlist.write(linha + '\n')
-			lista.append(x)
-			x = (a*x + c) % n
+			try:
+				# if verbose == True:
+				# 	if random() < 1e-7:
+				# 		raise(KeyboardInterrupt)
+				# lista.append(x)
+				linha = str(x).zfill(tamanho)
+				wordlist.write(linha + '\n')
+				x = (a*x + c) % n
+			# Status
+			except KeyboardInterrupt as e:
+				status()
+				continue
+		print('')
 			# if x == inicio: break
-	print("Pronto.")
+	print("Concluído em %s" % timedelta(seconds=int(time()-start)))
+
+
+
 
 # Teste
 def lcg_test():
