@@ -1,4 +1,5 @@
 #!/usr/bin/python
+
 # -*- coding: utf-8 -*-
 
 """
@@ -11,16 +12,17 @@ from random import random
 from sys import argv, stdout
 from time import time
 from datetime import timedelta
+from pprint import pprint
 import threading
 
 # tamanho da lista
 n = 100
-arquivo = "wordlist.txt"
+arquivo = "wordlist.csv"
 verbose = True
 # veja a definicao de congruencia linear
 a = 1
 # incremento inicial
-c = 5
+c = n
 lista = []
 pipe = True if '-p' in argv else False
 
@@ -46,6 +48,7 @@ def fatores(n):
 	else: fatoracao = [n]
 	return set(fatoracao)
 
+
 def status(i):
 	"""Exibe o progresso da execução."""
 	velocidade = i / (time() - start)
@@ -54,62 +57,51 @@ def status(i):
 	progresso = 100 * (i/n)
 
 	# Legível para humanos
-	if 			velocidade < 1e3: velocidade = "%.3f l/s" % velocidade
-	elif  1e3 < velocidade < 1e6: velocidade = "%.2f K/s" % (velocidade/1e3)
-	elif  1e6 < velocidade < 1e9: velocidade = "%.2f M/s" % (velocidade/1e6)
-	else:						  velocidade = "%.2f G/s" % (velocidade/1e9)
+	fator = int(log10(velocidade) / 3)
+	kmg = '#KMGT' #kilo, mega, giga, tera...
 	stdout.write("\r%.2f%%. Tempo estimado: %s " % (progresso, estimativa))
-	stdout.write("@ %s" % velocidade)
-	stdout.write("\t(CTRL-\ para abortar)\r")
+	stdout.write("@ %.0f %s/s" % (velocidade, kmg[fator]))
+	stdout.write("\t(CTRL \ para abortar)\r")
+
 
 def main():
 	"""Onde a mágica acontece. :D"""
 
 	# Busca c tal que c e n sejam coprimos
 	global a, c, n
-	tamanho = 0
-	if argv[1:]:
-		tamanho = int(argv[1])
+	tamanho = 10 ** 8
+	try:
+		tamanho = int(argv[argv.index('-p') + 1])
 		n = 10 ** tamanho
-	c = int(n / 4)
-	if not pipe: print("Buscando o menor coprimo de %d e %d..." % (n, c))
+	except ValueError as e:
+		pass
 	while mdc(n, c) != 1: c += 1
-	if not pipe: print("Encontrado: " + str(c))
 
 	# Calcula a-1 como produto dos fatores primos nao repetidos de n
 	for i in fatores(n): a *= i
 	# Segundo Knuth, deve haver a condicao abaixo
-	if (n % 4) == 0: a = a * 4
+	if (n % 4) == 0: a *= 4
 	# a finalmente calculado
 	a += 1
-	if not pipe: print("a = %d" % a)
-	x, inicio = 1, 1
+	x = inicio = 1
 	if not pipe: print("Gerando lista... ")
 
-	with open(arquivo, "w") as wordlist:
-		if pipe: wordlist = stdout
-		for i in range(n):
-			try:
-				# if verbose == True:
-				# 	if random() < 1e-7:
-				# 		raise(KeyboardInterrupt)
-				# lista.append(x)
-				linha = str(x).zfill(tamanho)
-				wordlist.write(linha + '\n')
-				x = (a*x + c) % n
-			# Status
-			except KeyboardInterrupt as e:
-				status(i)
-				continue
+	wordlist = stdout if pipe else open(arquivo, "w")
+	for i in range(n):
+		try:
+			linha = str(x).zfill(tamanho)
+			wordlist.write("%s\n" % linha)
+			x = (a*x + c) % n
+		# Status
+		except KeyboardInterrupt as e:
+			status(i)
+			continue
 
-		print('')
-			# if x == inicio: break
-	print("Concluído em %s" % timedelta(seconds=int(time()-start)))
+	if not pipe:
+		wordlist.close()
+		print("Concluído em %s" % timedelta(seconds=int(time()-start)))
 
 
-
-
-# Teste
 def lcg_test():
 	if len(lista) == 0:
 		print("Lista vazia. O teste não rodou.")
@@ -125,6 +117,7 @@ def lcg_test():
 	if verLista.lower() == 's':
 		for i in range(len(lista)):
 			print(str(i + 1) + ": " + str(lista[i]));
+			# Teste
 
 
 if __name__ == '__main__':
